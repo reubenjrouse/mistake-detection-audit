@@ -34,11 +34,15 @@ split_of = {rid: s for s, rids in splits.items() for rid in rids}
 rows = {k: [] for k in ["recording_id", "activity_id", "person_id", "split", "step_id",
                         "position", "start", "end", "description", "errors",
                         "s_before", "s_after"]}
-n_missing, n_short = 0, 0
+n_missing, n_short, no_features = 0, 0, []
 
 for rec in recordings:
     rid = rec["recording_id"]
-    feats = np.load(feat_dir / f"{rid}_360p.mp4_1s_1s.npz")["arr_0"]  # (seconds, dim)
+    feat_path = feat_dir / f"{rid}_360p.mp4_1s_1s.npz"
+    if not feat_path.exists():
+        no_features.append(rid)
+        continue
+    feats = np.load(feat_path)["arr_0"].astype(np.float32)  # (seconds, dim)
     T = len(feats)
     position = 0
     for step in rec["step_annotations"]:
@@ -75,6 +79,8 @@ out = args.data_root / f"steps_{args.backbone}_w{args.window}.npz"
 np.savez(out, **table)
 
 print(f"wrote {out}")
+if no_features:
+    print(f"WARNING: {len(no_features)} of {len(recordings)} recordings have no features and were skipped")
 print(f"{len(table['step_id'])} performed steps, {n_missing} missing steps skipped, "
       f"{n_short} steps shorter than the {args.window}s window")
 print(f"s_before {table['s_before'].shape}, NaNs: {np.isnan(table['s_before']).sum()}, "
