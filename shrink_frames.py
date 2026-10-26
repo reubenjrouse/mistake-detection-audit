@@ -27,7 +27,12 @@ for path in sorted(args.in_dir.glob("*_360p.npz")):
     second_of = np.minimum((np.arange(len(frames)) / FPS).astype(int), n_sec - 1)
     sums = np.zeros((n_sec, frames.shape[1]))
     np.add.at(sums, second_of, frames)
-    per_sec = sums / np.bincount(second_of, minlength=n_sec)[:, None]
+    counts = np.bincount(second_of, minlength=n_sec)
+    # Rounding can leave the final second with no frames; repeat the previous second there.
+    empty = np.flatnonzero(counts == 0)
+    assert all(empty == n_sec - 1), f"{rid}: empty seconds {empty} not at the end"
+    per_sec = sums / np.maximum(counts, 1)[:, None]
+    per_sec[empty] = per_sec[empty - 1]
 
     out = args.out_dir / f"{rid}_360p.mp4_1s_1s.npz"
     np.savez(out, per_sec.astype(np.float16))
