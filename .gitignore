@@ -1,0 +1,16 @@
+# data and features live outside the repo
+*.npz
+*.npy
+*.zip
+data/
+
+# python
+__pycache__/
+*.pyc
+.venv/
+
+# editor / os
+.vscode/
+.idea/
+.ipynb_checkpoints/
+Thumbs.db
