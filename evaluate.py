@@ -35,7 +35,7 @@ def select(rows, mask):
     return {k: v[mask] for k, v in rows.items()}
 
 
-def calibrate(Method, train):
+def calibrate(make, train):
     """Per-step mean/std of scores on correct steps the method did not see.
 
     Leave-one-person-out over training people, so no val/test data is used.
@@ -46,7 +46,7 @@ def calibrate(Method, train):
         held = select(train, (train["person_id"] == person)
                       & np.isin(train["step_id"], fit_rows["step_id"]))
         step_ids.append(held["step_id"])
-        scores.append(Method().fit(fit_rows).score(held))
+        scores.append(make().fit(fit_rows).score(held))
     step_ids, scores = np.concatenate(step_ids), np.concatenate(scores)
     stats = {"global": (scores.mean(), scores.std())}
     for sid in np.unique(step_ids):
@@ -80,6 +80,8 @@ parser.add_argument("table")
 parser.add_argument("--test", action="store_true", help="evaluate on test (final runs only)")
 parser.add_argument("--raw", action="store_true", help="skip per-step score normalization")
 parser.add_argument("--boot", type=int, default=1000)
+parser.add_argument("--seed", type=int, default=0)
+parser.add_argument("--methods", default="", help="comma-separated subset of methods")
 args = parser.parse_args()
 
 table = dict(np.load(args.table))
@@ -96,14 +98,19 @@ print(f"{eval_split}: " + ", ".join(f"{g}={(evalset['group'] == g).sum()}"
                                     for g in ["correct"] + GROUPS))
 
 for name, Method in METHODS.items():
-    scores = Method().fit(train).score(evalset)
+    if args.methods and name not in args.methods.split(","):
+        continue
+    make = lambda: Method(seed=args.seed)
+    raw_scores = make().fit(train).score(evalset)
+    # How well the method predicts outcomes of correct steps (lower = better predictor).
+    print(f"\n{name}  prediction error on correct {eval_split} steps: "
+          f"{raw_scores[evalset['group'] == 'correct'].mean():.4f}")
+    scores = raw_scores
     if not args.raw:
-        stats = calibrate(Method, train)
-        scores = normalize(scores, evalset["step_id"], stats)
+        stats = calibrate(make, train)
+        scores = normalize(raw_scores, evalset["step_id"], stats)
         n_fallback = (~np.isin(evalset["step_id"], list(stats))).sum()
-        print(f"\n{name}  ({n_fallback} {eval_split} steps used global normalization)")
-    else:
-        print(f"\n{name}")
+        print(f"  ({n_fallback} {eval_split} steps used global normalization)")
     rng = np.random.default_rng(0)
     for g in GROUPS:
         m = np.isin(evalset["group"], ["correct", g])

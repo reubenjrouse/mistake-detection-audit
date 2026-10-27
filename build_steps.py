@@ -2,11 +2,10 @@
 
 Every method reads this one file, so all methods see exactly the same data.
 
-Usage: python build_steps.py C:/Users/Reuben/data/cc4d [--backbone omnivore] [--window 2]
+Usage: python build_steps.py C:/Users/Reuben/data/cc4d [--backbone dinov2_s] [--window 2]
 Writes <data_root>/steps_<backbone>_w<window>.npz
 """
 import argparse
-import csv
 import json
 import math
 from pathlib import Path
@@ -18,7 +17,7 @@ CATEGORIES = ["Preparation Error", "Measurement Error", "Order Error", "Timing E
 
 parser = argparse.ArgumentParser()
 parser.add_argument("data_root", type=Path)
-parser.add_argument("--backbone", default="omnivore")
+parser.add_argument("--backbone", default="dinov2_s")
 parser.add_argument("--window", type=int, default=2, help="seconds averaged for each state")
 parser.add_argument("--split", default="person")
 args = parser.parse_args()
@@ -75,6 +74,13 @@ for rec in recordings:
 
 table = {k: np.array(v) for k, v in rows.items()}
 table["categories"] = np.array(CATEGORIES)
+
+# TF-IDF vector of each step description ("Cut -Cut the muffin..." -> "Cut the muffin..."),
+# so the world model can share knowledge between steps with shared words across recipes.
+from sklearn.feature_extraction.text import TfidfVectorizer
+
+texts = [d.split("-", 1)[-1].strip() for d in table["description"]]
+table["text_emb"] = TfidfVectorizer(stop_words="english").fit_transform(texts).toarray().astype(np.float32)
 out = args.data_root / f"steps_{args.backbone}_w{args.window}.npz"
 np.savez(out, **table)
 
