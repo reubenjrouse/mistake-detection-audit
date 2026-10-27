@@ -119,4 +119,73 @@ class WorldModel(Method):
         return self._predict(*self._tensors(rows)).numpy() * self.sd + self.mu
 
 
-METHODS = {"identity": Identity, "prototype": Prototype, "state_nn": StateNN, "world_model": WorldModel}
+class Contrastive(Method):
+    """Scores whether s_after is a believable outcome of this step from s_before.
+
+    Trained on correct steps only, against fake mistakes made from them:
+      "other_step": the after-state of a different step in the same recording
+                    (wrong outcome, but same kitchen, person and lighting);
+      "half_done":  the state halfway through the same step.
+    Score = -logit(real), so higher = more likely a mistake.
+    """
+
+    def __init__(self, seed=0, hidden=512, epochs=10, lr=1e-3, weight_decay=1e-2,
+                 negatives=("other_step", "half_done")):
+        super().__init__(seed)
+        self.hidden, self.epochs, self.lr = hidden, epochs, lr
+        self.weight_decay, self.negatives = weight_decay, negatives
+
+    def _inputs(self, before, text, after):
+        b, a = (before - self.mu) / self.sd, (after - self.mu) / self.sd
+        return torch.tensor(np.hstack([b, text, a, a - b]), dtype=torch.float32)
+
+    def _other_step(self, rows, rng):
+        """For each row, a random different step from the same recording."""
+        other = np.arange(len(rows["step_id"]))  # rows alone in their recording keep themselves
+        for idx in self.same_recording:
+            other[idx] = idx[(np.arange(len(idx)) + rng.integers(1, len(idx), len(idx))) % len(idx)]
+        return other
+
+    def fit(self, rows):
+        rng = np.random.default_rng(self.seed)
+        torch.manual_seed(self.seed)
+        both = np.concatenate([rows["s_before"], rows["s_after"]])
+        self.mu, self.sd = both.mean(0), both.std(0) + 1e-6
+        # Recordings with a single correct step cannot provide an "other_step" fake.
+        groups = [np.flatnonzero(rows["recording_id"] == r) for r in np.unique(rows["recording_id"])]
+        self.same_recording = [g for g in groups if len(g) > 1]
+        multi = np.concatenate(self.same_recording)
+
+        before, text, after = rows["s_before"], rows["text_emb"], rows["s_after"]
+        dim = self._inputs(before[:1], text[:1], after[:1]).shape[1]
+        self.net = nn.Sequential(nn.Linear(dim, self.hidden), nn.GELU(), nn.Dropout(0.1),
+                                 nn.Linear(self.hidden, self.hidden), nn.GELU(), nn.Dropout(0.1),
+                                 nn.Linear(self.hidden, 1))
+        opt = torch.optim.AdamW(self.net.parameters(), lr=self.lr, weight_decay=self.weight_decay)
+        for _ in range(self.epochs):
+            # Fresh fakes each epoch; one real example per fake keeps the classes balanced.
+            parts = []
+            if "other_step" in self.negatives:
+                other = self._other_step(rows, rng)
+                parts.append((self._inputs(before[multi], text[multi], after[other[multi]]), 0.0))
+                parts.append((self._inputs(before[multi], text[multi], after[multi]), 1.0))
+            if "half_done" in self.negatives:
+                parts.append((self._inputs(before, text, rows["s_mid"]), 0.0))
+                parts.append((self._inputs(before, text, after), 1.0))
+            x = torch.cat([p for p, _ in parts])
+            y = torch.cat([torch.full((len(p),), label) for p, label in parts])
+            for idx in torch.randperm(len(y)).split(128):
+                loss = nn.functional.binary_cross_entropy_with_logits(self.net(x[idx]).squeeze(1), y[idx])
+                opt.zero_grad()
+                loss.backward()
+                opt.step()
+        self.net.eval()
+        return self
+
+    @torch.no_grad()
+    def score(self, rows):
+        return -self.net(self._inputs(rows["s_before"], rows["text_emb"], rows["s_after"])).squeeze(1).numpy()
+
+
+METHODS = {"identity": Identity, "prototype": Prototype, "state_nn": StateNN,
+           "world_model": WorldModel, "contrastive": Contrastive}

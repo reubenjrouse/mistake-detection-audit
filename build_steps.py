@@ -32,7 +32,7 @@ split_of = {rid: s for s, rids in splits.items() for rid in rids}
 
 rows = {k: [] for k in ["recording_id", "activity_id", "person_id", "split", "step_id",
                         "position", "start", "end", "description", "errors",
-                        "s_before", "s_after"]}
+                        "s_before", "s_mid", "s_after"]}
 n_missing, n_short, no_features = 0, 0, []
 
 for rec in recordings:
@@ -56,6 +56,9 @@ for rec in recordings:
         b0, b1 = max(0, start - args.window), max(start, 1)
         # After: the last `window` seconds of the step, never earlier than its start.
         a0, a1 = max(start, end - args.window), max(end, start + 1)
+        # Mid: `window` seconds around the middle of the step (a half-done state).
+        m0 = max(start, (start + end) // 2 - args.window // 2)
+        m1 = max(min(m0 + args.window, end), m0 + 1)
 
         tags = {e["tag"] for e in step.get("errors", [])}
         rows["recording_id"].append(rid)
@@ -69,6 +72,7 @@ for rec in recordings:
         rows["description"].append(step_text[str(step["step_id"])])
         rows["errors"].append([c in tags for c in CATEGORIES])
         rows["s_before"].append(feats[b0:b1].mean(0))
+        rows["s_mid"].append(feats[m0:m1].mean(0))
         rows["s_after"].append(feats[a0:a1].mean(0))
         position += 1
 
