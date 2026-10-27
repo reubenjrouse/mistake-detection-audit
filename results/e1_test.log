@@ -1,0 +1,95 @@
+protocol person   train: 1904 correct steps   normalization: per-step (leave-one-person-out)
+test: correct=954, execution=197, procedural=145, mixed=74, other=27
+
+identity seed 0   prediction error on correct steps: 0.3037
+  execution   AUROC 0.532 [0.484, 0.572]   AP 0.190 [0.138, 0.254]   (n=197)
+  procedural  AUROC 0.529 [0.467, 0.602]   AP 0.186 [0.117, 0.266]   (n=145)
+  mixed       AUROC 0.555 [0.478, 0.636]   AP 0.150 [0.080, 0.247]   (n=74)
+  other       AUROC 0.531 [0.407, 0.654]   AP 0.076 [0.020, 0.181]   (n=27)
+  all         AUROC 0.535 [0.494, 0.574]   AP 0.370 [0.284, 0.453]   (n=443)
+
+prototype seed 0   prediction error on correct steps: 0.2614
+  execution   AUROC 0.536 [0.487, 0.585]   AP 0.181 [0.135, 0.243]   (n=197)
+  procedural  AUROC 0.531 [0.461, 0.596]   AP 0.148 [0.086, 0.220]   (n=145)
+  mixed       AUROC 0.551 [0.451, 0.648]   AP 0.085 [0.047, 0.144]   (n=74)
+  other       AUROC 0.516 [0.401, 0.638]   AP 0.032 [0.015, 0.079]   (n=27)
+  all         AUROC 0.536 [0.494, 0.578]   AP 0.337 [0.254, 0.424]   (n=443)
+
+state_nn seed 0   prediction error on correct steps: 0.3626
+  execution   AUROC 0.530 [0.488, 0.570]   AP 0.181 [0.138, 0.238]   (n=197)
+  procedural  AUROC 0.514 [0.455, 0.560]   AP 0.147 [0.086, 0.217]   (n=145)
+  mixed       AUROC 0.543 [0.468, 0.621]   AP 0.090 [0.051, 0.156]   (n=74)
+  other       AUROC 0.542 [0.446, 0.653]   AP 0.034 [0.017, 0.076]   (n=27)
+  all         AUROC 0.528 [0.494, 0.563]   AP 0.338 [0.260, 0.418]   (n=443)
+
+world_model seed 0   prediction error on correct steps: 0.2258
+  execution   AUROC 0.548 [0.491, 0.601]   AP 0.193 [0.137, 0.267]   (n=197)
+  procedural  AUROC 0.508 [0.438, 0.580]   AP 0.146 [0.088, 0.214]   (n=145)
+  mixed       AUROC 0.573 [0.487, 0.669]   AP 0.112 [0.061, 0.185]   (n=74)
+  other       AUROC 0.463 [0.336, 0.605]   AP 0.079 [0.014, 0.266]   (n=27)
+  all         AUROC 0.534 [0.485, 0.585]   AP 0.355 [0.273, 0.438]   (n=443)
+
+world_model seed 1   prediction error on correct steps: 0.2271
+  execution   AUROC 0.530 [0.478, 0.580]   AP 0.184 [0.133, 0.250]   (n=197)
+  procedural  AUROC 0.507 [0.437, 0.578]   AP 0.149 [0.088, 0.221]   (n=145)
+  mixed       AUROC 0.554 [0.465, 0.652]   AP 0.115 [0.060, 0.192]   (n=74)
+  other       AUROC 0.449 [0.315, 0.588]   AP 0.035 [0.014, 0.103]   (n=27)
+  all         AUROC 0.522 [0.475, 0.572]   AP 0.343 [0.258, 0.427]   (n=443)
+
+world_model seed 2   prediction error on correct steps: 0.2257
+  execution   AUROC 0.540 [0.486, 0.592]   AP 0.191 [0.134, 0.262]   (n=197)
+  procedural  AUROC 0.512 [0.447, 0.570]   AP 0.150 [0.089, 0.224]   (n=145)
+  mixed       AUROC 0.550 [0.462, 0.644]   AP 0.119 [0.063, 0.197]   (n=74)
+  other       AUROC 0.477 [0.354, 0.617]   AP 0.057 [0.015, 0.184]   (n=27)
+  all         AUROC 0.528 [0.480, 0.577]   AP 0.353 [0.269, 0.440]   (n=443)
+
+world_model seed 3   prediction error on correct steps: 0.2272
+  execution   AUROC 0.547 [0.493, 0.601]   AP 0.191 [0.136, 0.261]   (n=197)
+  procedural  AUROC 0.504 [0.441, 0.571]   AP 0.156 [0.091, 0.241]   (n=145)
+  mixed       AUROC 0.559 [0.472, 0.654]   AP 0.119 [0.065, 0.198]   (n=74)
+  other       AUROC 0.465 [0.337, 0.607]   AP 0.044 [0.015, 0.133]   (n=27)
+  all         AUROC 0.530 [0.481, 0.578]   AP 0.354 [0.268, 0.434]   (n=443)
+
+world_model seed 4   prediction error on correct steps: 0.2283
+  execution   AUROC 0.535 [0.480, 0.589]   AP 0.187 [0.134, 0.256]   (n=197)
+  procedural  AUROC 0.497 [0.434, 0.566]   AP 0.160 [0.091, 0.233]   (n=145)
+  mixed       AUROC 0.549 [0.457, 0.649]   AP 0.100 [0.056, 0.172]   (n=74)
+  other       AUROC 0.478 [0.347, 0.623]   AP 0.060 [0.015, 0.169]   (n=27)
+  all         AUROC 0.522 [0.474, 0.573]   AP 0.349 [0.261, 0.431]   (n=443)
+
+contrastive seed 0
+  execution   AUROC 0.492 [0.429, 0.547]   AP 0.191 [0.135, 0.264]   (n=197)
+  procedural  AUROC 0.499 [0.428, 0.578]   AP 0.149 [0.088, 0.239]   (n=145)
+  mixed       AUROC 0.535 [0.454, 0.619]   AP 0.098 [0.059, 0.161]   (n=74)
+  other       AUROC 0.655 [0.569, 0.755]   AP 0.053 [0.027, 0.117]   (n=27)
+  all         AUROC 0.512 [0.464, 0.558]   AP 0.352 [0.260, 0.438]   (n=443)
+
+contrastive seed 1
+  execution   AUROC 0.497 [0.443, 0.551]   AP 0.185 [0.131, 0.254]   (n=197)
+  procedural  AUROC 0.485 [0.416, 0.560]   AP 0.140 [0.083, 0.212]   (n=145)
+  mixed       AUROC 0.507 [0.433, 0.592]   AP 0.080 [0.046, 0.129]   (n=74)
+  other       AUROC 0.598 [0.510, 0.701]   AP 0.043 [0.023, 0.086]   (n=27)
+  all         AUROC 0.501 [0.453, 0.546]   AP 0.334 [0.244, 0.413]   (n=443)
+
+contrastive seed 2
+  execution   AUROC 0.509 [0.458, 0.561]   AP 0.177 [0.124, 0.246]   (n=197)
+  procedural  AUROC 0.511 [0.437, 0.584]   AP 0.164 [0.096, 0.254]   (n=145)
+  mixed       AUROC 0.515 [0.440, 0.594]   AP 0.080 [0.047, 0.133]   (n=74)
+  other       AUROC 0.639 [0.534, 0.731]   AP 0.043 [0.024, 0.080]   (n=27)
+  all         AUROC 0.519 [0.478, 0.560]   AP 0.342 [0.249, 0.431]   (n=443)
+
+contrastive seed 3
+  execution   AUROC 0.507 [0.453, 0.555]   AP 0.186 [0.133, 0.254]   (n=197)
+  procedural  AUROC 0.513 [0.449, 0.585]   AP 0.166 [0.093, 0.268]   (n=145)
+  mixed       AUROC 0.508 [0.400, 0.615]   AP 0.090 [0.050, 0.152]   (n=74)
+  other       AUROC 0.661 [0.579, 0.752]   AP 0.046 [0.024, 0.097]   (n=27)
+  all         AUROC 0.518 [0.477, 0.562]   AP 0.353 [0.263, 0.436]   (n=443)
+
+contrastive seed 4
+  execution   AUROC 0.527 [0.478, 0.576]   AP 0.183 [0.132, 0.252]   (n=197)
+  procedural  AUROC 0.537 [0.457, 0.606]   AP 0.190 [0.110, 0.281]   (n=145)
+  mixed       AUROC 0.486 [0.409, 0.564]   AP 0.075 [0.043, 0.120]   (n=74)
+  other       AUROC 0.583 [0.479, 0.697]   AP 0.066 [0.025, 0.171]   (n=27)
+  all         AUROC 0.527 [0.485, 0.568]   AP 0.356 [0.262, 0.440]   (n=443)
+
+wrote results/e1_test.csv
