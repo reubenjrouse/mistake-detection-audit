@@ -101,10 +101,12 @@ for name, Method in METHODS.items():
     if args.methods and name not in args.methods.split(","):
         continue
     make = lambda: Method(seed=args.seed)
-    raw_scores = make().fit(train).score(evalset)
-    # How well the method predicts outcomes of correct steps (lower = better predictor).
-    print(f"\n{name}  prediction error on correct {eval_split} steps: "
-          f"{raw_scores[evalset['group'] == 'correct'].mean():.4f}")
+    method = make().fit(train)
+    raw_scores = method.score(evalset)
+    print(f"\n{name}")
+    if hasattr(method, "expected"):  # how well it predicts correct outcomes (lower = better)
+        print(f"  prediction error on correct {eval_split} steps: "
+              f"{raw_scores[evalset['group'] == 'correct'].mean():.4f}")
     scores = raw_scores
     if not args.raw:
         stats = calibrate(make, train)

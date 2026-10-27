@@ -4,6 +4,7 @@ Row t = frame at t + 0.5 s. Each row is [CLS token, mean of patch tokens].
 Writes <out_dir>/<recording_id>_360p.mp4_1s_1s.npz (float16); existing outputs are skipped.
 
 Usage: python extract_dinov2.py D:/cc4d_videos C:/Users/Reuben/data/cc4d/features/dinov2_s [--model dinov2_vits14]
+       [--crop 0.25,0.75,0.2,0.85]   # x0,x1,y0,y1 as fractions of the frame: keep only the hands/food region
 """
 import argparse
 import time
@@ -19,10 +20,14 @@ parser.add_argument("out_dir", type=Path)
 parser.add_argument("--model", default="dinov2_vits14")
 parser.add_argument("--only", default="", help="comma-separated recording ids")
 parser.add_argument("--batch", type=int, default=64)
+parser.add_argument("--crop", default="", help="x0,x1,y0,y1 fractions of the frame to keep")
 args = parser.parse_args()
 args.out_dir.mkdir(parents=True, exist_ok=True)
 
 H, W = 224, 392  # 360p is 16:9; keep the whole frame, both sides multiples of the 14 px patch
+CROP = [float(v) for v in args.crop.split(",")] if args.crop else None
+if CROP:  # keep the crop's aspect ratio, width rounded to a multiple of the 14 px patch
+    W = round(H * (CROP[1] - CROP[0]) * 16 / ((CROP[3] - CROP[2]) * 9) / 14) * 14
 MEAN = torch.tensor([0.485, 0.456, 0.406], device="cuda").view(1, 3, 1, 1)
 STD = torch.tensor([0.229, 0.224, 0.225], device="cuda").view(1, 3, 1, 1)
 
@@ -38,13 +43,21 @@ def frames_per_second(path):
         for frame in container.decode(stream):
             if frame.time is None or frame.time < target + 0.5:
                 continue
-            yield target, frame.to_ndarray(format="rgb24", width=W, height=H)
+            if CROP:  # crop at full resolution, resize on the GPU in embed()
+                img = frame.to_ndarray(format="rgb24")
+                h, w = img.shape[:2]
+                img = img[int(CROP[2] * h):int(CROP[3] * h), int(CROP[0] * w):int(CROP[1] * w)]
+            else:
+                img = frame.to_ndarray(format="rgb24", width=W, height=H)
+            yield target, img
             target = int(frame.time - 0.5) + 1
 
 
 @torch.no_grad()
 def embed(batch):
     x = torch.from_numpy(np.stack(batch)).cuda().permute(0, 3, 1, 2).half() / 255
+    if x.shape[-2:] != (H, W):
+        x = torch.nn.functional.interpolate(x.float(), size=(H, W), mode="bilinear", antialias=True).half()
     out = model.forward_features((x - MEAN.half()) / STD.half())
     return torch.cat([out["x_norm_clstoken"], out["x_norm_patchtokens"].mean(1)], 1).float().cpu().numpy()
 

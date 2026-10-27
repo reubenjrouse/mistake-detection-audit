@@ -20,6 +20,9 @@ parser.add_argument("data_root", type=Path)
 parser.add_argument("--backbone", default="dinov2_s")
 parser.add_argument("--window", type=int, default=2, help="seconds averaged for each state")
 parser.add_argument("--split", default="person")
+parser.add_argument("--after_pos", type=float, default=1.0,
+                    help="where s_after is centred, as a fraction of the step (1.0 = last window). "
+                         "The annotated end is often a transition; step content peaks around 0.85.")
 args = parser.parse_args()
 
 ann = args.data_root / "annotations"
@@ -54,8 +57,11 @@ for rec in recordings:
             n_short += 1
         # Before: the `window` seconds just before the step starts (at least 1 s).
         b0, b1 = max(0, start - args.window), max(start, 1)
-        # After: the last `window` seconds of the step, never earlier than its start.
-        a0, a1 = max(start, end - args.window), max(end, start + 1)
+        # After: `window` seconds ending at the step end (after_pos=1) or centred at after_pos,
+        # kept inside the step.
+        a_end = end if args.after_pos >= 1 else round(start + args.after_pos * (end - start) + args.window / 2)
+        a_end = min(a_end, end)
+        a0, a1 = max(start, a_end - args.window), max(a_end, start + 1)
         # Mid: `window` seconds around the middle of the step (a half-done state).
         m0 = max(start, (start + end) // 2 - args.window // 2)
         m1 = max(min(m0 + args.window, end), m0 + 1)
@@ -85,7 +91,8 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 
 texts = [d.split("-", 1)[-1].strip() for d in table["description"]]
 table["text_emb"] = TfidfVectorizer(stop_words="english").fit_transform(texts).toarray().astype(np.float32)
-out = args.data_root / f"steps_{args.backbone}_w{args.window}.npz"
+pos_tag = "" if args.after_pos >= 1 else f"_a{round(args.after_pos * 100)}"
+out = args.data_root / f"steps_{args.backbone}_w{args.window}{pos_tag}.npz"
 np.savez(out, **table)
 
 print(f"wrote {out}")
