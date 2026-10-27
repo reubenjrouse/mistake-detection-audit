@@ -15,6 +15,7 @@ def cosine_distance(a, b):
 
 
 class Method:
+    stochastic = False  # True: results depend on the seed, so evaluate over several
     def __init__(self, seed=0):
         self.seed = seed
 
@@ -79,6 +80,8 @@ class WorldModel(Method):
     direct prediction and short training overfit least.
     """
 
+    stochastic = True
+
     def __init__(self, seed=0, hidden=512, epochs=10, lr=1e-3, weight_decay=1e-2, residual=False):
         super().__init__(seed)
         self.hidden, self.epochs, self.lr = hidden, epochs, lr
@@ -128,6 +131,8 @@ class Contrastive(Method):
       "half_done":  the state halfway through the same step.
     Score = -logit(real), so higher = more likely a mistake.
     """
+
+    stochastic = True
 
     def __init__(self, seed=0, hidden=512, epochs=10, lr=1e-3, weight_decay=1e-2,
                  negatives=("other_step", "half_done")):

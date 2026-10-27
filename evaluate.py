@@ -3,7 +3,8 @@
 Each group is evaluated as (that group's error steps) vs (all correct steps).
 Develop on val (default); run --test only for final numbers.
 
-Usage: python evaluate.py C:/Users/Reuben/data/cc4d/steps_omnivore_w2.npz [--test] [--raw]
+Usage: python evaluate.py C:/Users/Reuben/data/cc4d/steps_dinov2_s_w2.npz [--test] [--raw]
+       [--protocol normal_vs_error] [--seeds 0,1,2,3,4] [--out results/e1_test.csv]
 """
 import argparse
 
@@ -78,45 +79,62 @@ def metrics_with_ci(y, s, recordings, n_boot, rng):
 parser = argparse.ArgumentParser()
 parser.add_argument("table")
 parser.add_argument("--test", action="store_true", help="evaluate on test (final runs only)")
+parser.add_argument("--protocol", default="person", choices=["person", "normal_vs_error"],
+                    help="person: our person split. normal_vs_error: train on correct steps of normal "
+                         "recordings, test on all error recordings (the setup of EgoPED/AMNAR/AEM)")
 parser.add_argument("--raw", action="store_true", help="skip per-step score normalization")
 parser.add_argument("--boot", type=int, default=1000)
-parser.add_argument("--seed", type=int, default=0)
+parser.add_argument("--seeds", default="0", help="comma-separated seeds for learned methods")
 parser.add_argument("--methods", default="", help="comma-separated subset of methods")
+parser.add_argument("--out", default="", help="write one CSV row per method/seed/group")
 args = parser.parse_args()
 
 table = dict(np.load(args.table))
 categories = table.pop("categories")
 table["group"] = assign_groups(table["errors"], categories)
 
-eval_split = "test" if args.test else "val"
-train = select(table, (table["split"] == "train") & (table["group"] == "correct"))
-evalset = select(table, table["split"] == eval_split)
+if args.protocol == "person":
+    eval_name = "test" if args.test else "val"
+    train = select(table, (table["split"] == "train") & (table["group"] == "correct"))
+    evalset = select(table, table["split"] == eval_name)
+else:
+    eval_name = "error recordings"
+    train = select(table, ~table["recording_error"] & (table["group"] == "correct"))
+    evalset = select(table, table["recording_error"])
 
-print(f"train: {len(train['step_id'])} correct steps   "
+print(f"protocol {args.protocol}   train: {len(train['step_id'])} correct steps   "
       f"normalization: {'none' if args.raw else 'per-step (leave-one-person-out)'}")
-print(f"{eval_split}: " + ", ".join(f"{g}={(evalset['group'] == g).sum()}"
-                                    for g in ["correct"] + GROUPS))
+print(f"{eval_name}: " + ", ".join(f"{g}={(evalset['group'] == g).sum()}"
+                                   for g in ["correct"] + GROUPS))
 
+rows = []
 for name, Method in METHODS.items():
     if args.methods and name not in args.methods.split(","):
         continue
-    make = lambda: Method(seed=args.seed)
-    method = make().fit(train)
-    raw_scores = method.score(evalset)
-    print(f"\n{name}")
-    if hasattr(method, "expected"):  # how well it predicts correct outcomes (lower = better)
-        print(f"  prediction error on correct {eval_split} steps: "
-              f"{raw_scores[evalset['group'] == 'correct'].mean():.4f}")
-    scores = raw_scores
-    if not args.raw:
-        stats = calibrate(make, train)
-        scores = normalize(raw_scores, evalset["step_id"], stats)
-        n_fallback = (~np.isin(evalset["step_id"], list(stats))).sum()
-        print(f"  ({n_fallback} {eval_split} steps used global normalization)")
-    rng = np.random.default_rng(0)
-    for g in GROUPS:
-        m = np.isin(evalset["group"], ["correct", g])
-        y = evalset["group"][m] == g
-        (auc, ap), lo, hi = metrics_with_ci(y, scores[m], evalset["recording_id"][m], args.boot, rng)
-        print(f"  {g:<11} AUROC {auc:.3f} [{lo[0]:.3f}, {hi[0]:.3f}]   "
-              f"AP {ap:.3f} [{lo[1]:.3f}, {hi[1]:.3f}]   (n={y.sum()})")
+    for seed in (args.seeds.split(",") if Method.stochastic else ["0"]):
+        make = lambda: Method(seed=int(seed))
+        method = make().fit(train)
+        scores = method.score(evalset)
+        pred_err = scores[evalset["group"] == "correct"].mean() if hasattr(method, "expected") else np.nan
+        print(f"\n{name} seed {seed}" + ("" if np.isnan(pred_err) else
+                                         f"   prediction error on correct steps: {pred_err:.4f}"))
+        if not args.raw:
+            scores = normalize(scores, evalset["step_id"], calibrate(make, train))
+        rng = np.random.default_rng(0)
+        for g in GROUPS + ["all"]:
+            m = np.ones(len(scores), bool) if g == "all" else np.isin(evalset["group"], ["correct", g])
+            y = evalset["group"][m] != "correct"
+            (auc, ap), lo, hi = metrics_with_ci(y, scores[m], evalset["recording_id"][m], args.boot, rng)
+            print(f"  {g:<11} AUROC {auc:.3f} [{lo[0]:.3f}, {hi[0]:.3f}]   "
+                  f"AP {ap:.3f} [{lo[1]:.3f}, {hi[1]:.3f}]   (n={y.sum()})")
+            rows.append(dict(protocol=args.protocol, eval=eval_name, method=name, seed=seed, group=g,
+                             n_pos=int(y.sum()), n_neg=int((~y).sum()), auroc=auc, auroc_lo=lo[0],
+                             auroc_hi=hi[0], ap=ap, ap_lo=lo[1], ap_hi=hi[1], pred_err=pred_err))
+
+if args.out:
+    import csv
+    with open(args.out, "w", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=list(rows[0]))
+        writer.writeheader()
+        writer.writerows(rows)
+    print(f"\nwrote {args.out}")

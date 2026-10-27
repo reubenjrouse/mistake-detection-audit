@@ -34,7 +34,7 @@ splits = json.load(open(ann / f"data_splits/{args.split}_data_split_combined.jso
 split_of = {rid: s for s, rids in splits.items() for rid in rids}
 
 rows = {k: [] for k in ["recording_id", "activity_id", "person_id", "split", "step_id",
-                        "position", "start", "end", "description", "errors",
+                        "position", "start", "end", "description", "errors", "recording_error",
                         "s_before", "s_mid", "s_after"]}
 n_missing, n_short, no_features = 0, 0, []
 
@@ -77,6 +77,7 @@ for rec in recordings:
         rows["end"].append(step["end_time"])
         rows["description"].append(step_text[str(step["step_id"])])
         rows["errors"].append([c in tags for c in CATEGORIES])
+        rows["recording_error"].append(rec["is_error"])
         rows["s_before"].append(feats[b0:b1].mean(0))
         rows["s_mid"].append(feats[m0:m1].mean(0))
         rows["s_after"].append(feats[a0:a1].mean(0))
