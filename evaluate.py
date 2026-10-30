@@ -87,6 +87,7 @@ parser.add_argument("--boot", type=int, default=1000)
 parser.add_argument("--seeds", default="0", help="comma-separated seeds for learned methods")
 parser.add_argument("--methods", default="", help="comma-separated subset of methods")
 parser.add_argument("--out", default="", help="write one CSV row per method/seed/group")
+parser.add_argument("--scores_out", default="", help="save each method/seed's per-step scores (npz)")
 args = parser.parse_args()
 
 table = dict(np.load(args.table))
@@ -96,18 +97,19 @@ table["group"] = assign_groups(table["errors"], categories)
 if args.protocol == "person":
     eval_name = "test" if args.test else "val"
     train = select(table, (table["split"] == "train") & (table["group"] == "correct"))
-    evalset = select(table, table["split"] == eval_name)
+    eval_mask = table["split"] == eval_name
 else:
     eval_name = "error recordings"
     train = select(table, ~table["recording_error"] & (table["group"] == "correct"))
-    evalset = select(table, table["recording_error"])
+    eval_mask = table["recording_error"]
+evalset = select(table, eval_mask)
 
 print(f"protocol {args.protocol}   train: {len(train['step_id'])} correct steps   "
       f"normalization: {'none' if args.raw else 'per-step (leave-one-person-out)'}")
 print(f"{eval_name}: " + ", ".join(f"{g}={(evalset['group'] == g).sum()}"
                                    for g in ["correct"] + GROUPS))
 
-rows = []
+rows, saved = [], {"eval_idx": np.flatnonzero(eval_mask)}
 for name, Method in METHODS.items():
     if args.methods and name not in args.methods.split(","):
         continue
@@ -120,6 +122,7 @@ for name, Method in METHODS.items():
                                          f"   prediction error on correct steps: {pred_err:.4f}"))
         if not args.raw:
             scores = normalize(scores, evalset["step_id"], calibrate(make, train))
+        saved[f"{name}_seed{seed}"] = scores
         rng = np.random.default_rng(0)
         for g in GROUPS + ["all"]:
             m = np.ones(len(scores), bool) if g == "all" else np.isin(evalset["group"], ["correct", g])
@@ -130,6 +133,10 @@ for name, Method in METHODS.items():
             rows.append(dict(protocol=args.protocol, eval=eval_name, method=name, seed=seed, group=g,
                              n_pos=int(y.sum()), n_neg=int((~y).sum()), auroc=auc, auroc_lo=lo[0],
                              auroc_hi=hi[0], ap=ap, ap_lo=lo[1], ap_hi=hi[1], pred_err=pred_err))
+
+if args.scores_out:
+    np.savez(args.scores_out, **saved)
+    print(f"\nwrote {args.scores_out}")
 
 if args.out:
     import csv
