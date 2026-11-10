@@ -1,10 +1,10 @@
-"""E1: score steps with each method, report AUROC / AP (95% CI) per error group.
+"""Our detectors: score steps with each method, report AUROC / AP (95% CI) per error group.
 
 Each group is evaluated as (that group's error steps) vs (all correct steps).
 Develop on val (default); run --test only for final numbers.
 
-Usage: python evaluate.py C:/Users/Reuben/data/cc4d/steps_dinov2_s_w2.npz [--test] [--raw]
-       [--protocol normal_vs_error] [--seeds 0,1,2,3,4] [--out results/e1_test.csv]
+Usage: python detectors/evaluate.py C:/Users/Reuben/data/cc4d/steps_dinov2_s_w2.npz [--test] [--raw]
+       [--protocol normal_vs_error] [--seeds 0,1,2,3,4] [--out results/detectors_person_test.csv]
 """
 import argparse
 

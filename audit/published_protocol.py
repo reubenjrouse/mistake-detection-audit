@@ -13,8 +13,8 @@ TPR/FPR; the AUC sorts FPRs and TPRs separately and appends (1, 1); EDA is the m
 of their segment-level accuracy (background segments included). Standard ROC AUCs (frame and step
 level) are printed for reference.
 
-Usage: python published_protocol.py D:/third_party/AMNAR/attachments [--dataset holoassist] [--jitter 5]
-       python published_protocol.py D:/data/egoper/EgoPER --dataset egoper --amnar D:/data/amnar_egoper_outputs --export <prefix>
+Usage: python audit/published_protocol.py D:/third_party/AMNAR/attachments [--dataset holoassist] [--jitter 5]
+       python audit/published_protocol.py D:/data/egoper/EgoPER --dataset egoper --amnar D:/data/amnar_egoper_outputs --export <prefix>
 """
 import argparse
 import json
@@ -35,8 +35,8 @@ parser.add_argument("attachments", type=Path, help="AMNAR attachments/, or for e
 parser.add_argument("--dataset", default="cc4d", choices=["cc4d", "holoassist", "egoper"])
 parser.add_argument("--amnar", type=Path, help="egoper: folder with AMNAR's released {task}_*/pred_seg_results_*.pkl;"
                     " adds their per-step score (max z over overlapping predicted segments) as 'amnar'")
-parser.add_argument("--export", default="", help="write <prefix>_table/_blind/_methods.npz for fair_eval.py and "
-                    "matched_eval.py (test steps of all tasks pooled)")
+parser.add_argument("--export", default="", help="write <prefix>_table/_blind/_methods.npz for audit.py "
+                    "(test steps of all tasks pooled)")
 parser.add_argument("--jitter", type=float, default=0.0, help="seconds of boundary noise (std)")
 parser.add_argument("--fps", type=float, default=10, help="frames per second of the segment annotations")
 parser.add_argument("--matched", default="", help="also report AUROC on blind-matched test pairs with these "
@@ -296,7 +296,7 @@ if args.matched:
         (a, _), lo, hi = pair_metrics(e, c)
         print(f"{name:<14} {a:6.3f} [{lo[0]:.3f}, {hi[0]:.3f}]")
 
-if args.export:  # the format of build_table / shortcuts.py / evaluate.py --scores_out, test steps only
+if args.export:  # the format of build_steps.py / blind_scores.py / evaluate.py --scores_out, test steps only
     rows = [r for te, _ in exported for r in te]
     cats = np.array([types[k] for k in sorted(types) if k != 0])
     typ = col(rows, "type")

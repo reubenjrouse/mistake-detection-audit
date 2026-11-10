@@ -3,7 +3,7 @@
 Row t = frame at t + 0.5 s. Each row is [CLS token, mean of patch tokens].
 Writes <out_dir>/<recording_id>_360p.mp4_1s_1s.npz (float16); existing outputs are skipped.
 
-Usage: python extract_dinov2.py D:/cc4d_videos C:/Users/Reuben/data/cc4d/features/dinov2_s [--model dinov2_vits14]
+Usage: python prepare/extract_dinov2.py D:/cc4d_videos C:/Users/Reuben/data/cc4d/features/dinov2_s [--model dinov2_vits14]
        [--crop 0.25,0.75,0.2,0.85]   # x0,x1,y0,y1 as fractions of the frame: keep only the hands/food region
        [--scale 0.5]                 # blur test: decode at this fraction of the model input size, upsample back
 """

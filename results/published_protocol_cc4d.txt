@@ -1,0 +1,14 @@
+all: 164 train recordings (2432 steps), 220 test recordings (2981 steps, 1683 errors)
+
+cc4d, boundary jitter 0.0 s, averaged over 1 task(s)
+published  AUC: EgoPED 54.9, AMNAR 60.2, AEM 62.5   EDA: 69.8 / 72.3 / 71.9
+blind score    micro AUC macro AUC    EDA  std frame AUC  std step AUC
+duration            71.9      75.0   75.4           74.6          58.0
+position            67.8      71.0   77.2           73.8          63.4
+transition          66.3      69.0   76.7           72.3          60.2
+rec_length          58.2      59.3   75.8           73.9          59.2
+rec_duration        68.2      65.9   75.5           72.2          56.0
+sum                 54.7      55.8   77.0           76.3          63.3
+constant            66.6      72.2   72.9           66.6          50.0
+flag nothing        50.0      51.4   71.3           50.0          50.0
+sum / 2             58.4      58.6   77.0           76.3          63.3

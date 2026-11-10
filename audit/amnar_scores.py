@@ -6,7 +6,7 @@ threshold, (distance, mean + threshold * std, flag) per predicted segment; from 
 0 and 1 we recover the continuous score z = (distance - mean) / std. Each annotated step gets the largest
 z among predicted segments that overlap it (steps no segment covers get the lowest score).
 
-Usage: python amnar_scores.py <AMNAR ckpt dir with pred_seg_results_*.pkl> <steps table> <out.npz>
+Usage: python audit/amnar_scores.py <AMNAR ckpt dir with pred_seg_results_*.pkl> <steps table> <out.npz>
        [--fps 1] [--quantile 0.85] [--name amnar]
 """
 import argparse

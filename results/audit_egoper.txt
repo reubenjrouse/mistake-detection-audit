@@ -1,0 +1,45 @@
+1. GAIN OVER BLIND SCORES
+
+all errors vs correct steps: 504 vs 1783, 188 recordings; blind scores alone: AUROC 0.686
+  score                      AUROC [95% CI]   blind+            gain [95% CI]
+  constant            0.500 [0.500, 0.500]    0.686   -0.000 [-0.000, +0.000]
+  blind sum           0.623 [0.588, 0.657]    0.686   +0.000 [-0.001, +0.001]
+  amnar               0.680 [0.652, 0.708]    0.738   +0.052 [+0.031, +0.072]
+
+execution errors vs correct steps: 358 vs 1783, 188 recordings; blind scores alone: AUROC 0.616
+  score                      AUROC [95% CI]   blind+            gain [95% CI]
+  constant            0.500 [0.500, 0.500]    0.616   +0.000 [-0.000, +0.000]
+  blind sum           0.552 [0.508, 0.594]    0.615   -0.000 [-0.001, +0.001]
+  amnar               0.679 [0.646, 0.713]    0.691   +0.075 [+0.044, +0.105]
+
+procedural errors vs correct steps: 104 vs 1783, 188 recordings; blind scores alone: AUROC 0.929
+  score                      AUROC [95% CI]   blind+            gain [95% CI]
+  constant            0.500 [0.500, 0.500]    0.929   -0.000 [-0.000, +0.000]
+  blind sum           0.795 [0.759, 0.833]    0.929   -0.000 [-0.001, +0.001]
+  amnar               0.690 [0.638, 0.739]    0.937   +0.007 [+0.001, +0.014]
+
+2. TIMING-MATCHED PAIRS
+
+all errors: 231 pairs, 165 recordings, 41 step types (same recipe, blind scores within 0.75,0.75,2,2,2 SD)
+  score                      AUROC [95% CI]     pair accuracy [95% CI]
+  constant            0.500 [0.500, 0.500]    0.500 [0.500, 0.500]
+  duration            0.498 [0.487, 0.510]    0.496 [0.435, 0.558]
+  position            0.505 [0.494, 0.518]    0.541 [0.487, 0.591]
+  transition          0.511 [0.497, 0.525]    0.485 [0.444, 0.528]
+  rec_length          0.521 [0.505, 0.539]    0.548 [0.519, 0.576]
+  rec_duration        0.498 [0.476, 0.521]    0.494 [0.437, 0.558]
+  sum                 0.512 [0.504, 0.521]    0.532 [0.472, 0.597]
+  amnar               0.640 [0.590, 0.691]    0.628 [0.567, 0.688]
+
+execution errors: 214 pairs, 164 recordings, 37 step types (same recipe, blind scores within 0.75,0.75,2,2,2 SD)
+  score                      AUROC [95% CI]     pair accuracy [95% CI]
+  constant            0.500 [0.500, 0.500]    0.500 [0.500, 0.500]
+  duration            0.500 [0.487, 0.513]    0.502 [0.435, 0.570]
+  position            0.504 [0.492, 0.516]    0.523 [0.467, 0.577]
+  transition          0.515 [0.498, 0.531]    0.495 [0.456, 0.537]
+  rec_length          0.526 [0.506, 0.543]    0.556 [0.528, 0.584]
+  rec_duration        0.502 [0.474, 0.528]    0.500 [0.435, 0.570]
+  sum                 0.515 [0.506, 0.525]    0.533 [0.463, 0.598]
+  amnar               0.638 [0.586, 0.686]    0.626 [0.558, 0.687]
+
+wrote test_sets/egoper_pairs.csv

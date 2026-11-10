@@ -3,7 +3,7 @@
 Links come from the official downloader repo (metadata/download_links.json).
 Files already downloaded with the right size are skipped.
 
-Usage: python download_videos.py C:/Users/Reuben/data/cc4d/downloader/metadata/download_links.json D:/cc4d_videos [--only 1_7,2_4]
+Usage: python prepare/download_videos.py C:/Users/Reuben/data/cc4d/downloader/metadata/download_links.json D:/cc4d_videos [--only 1_7,2_4]
 """
 import argparse
 import json

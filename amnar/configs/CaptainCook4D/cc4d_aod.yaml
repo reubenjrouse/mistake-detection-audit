@@ -1,0 +1,51 @@
+# CaptainCook4D, all recipes in one model (task 0), 1 fps features (DINOv2-S by default; run_cc4d.sh swaps in
+# Omnivore / SlowFast). Same settings as AMNAR's EgoPER DINOv2 configs except dataset, input_dim, fps, no object graph.
+dataset_name: CaptainCook4D
+train_split: train
+val_split: null
+test_split: test
+model_name: LocPointTransformer_CSPL_GCN
+dataset: {
+  num_classes: 351,
+  trunc_thresh: 0.5,
+  crop_ratio: [0.9, 1.0],
+  max_seq_len: 2304,
+  background_ratio: 1.0,
+  use_gcn: False,
+  task: '0',
+  default_fps: 1,
+  features_subdir: dinov2_s
+}
+model: {
+  fpn_type: identity,
+  backbone_type: convGCNTransformer,
+  max_buffer_len_factor: 6.0,
+  n_mha_win_size: 19,
+  input_dim: 768,
+  online_mode: True
+}
+opt: {
+  learning_rate: 0.001,
+  epochs: 200,
+  weight_decay: 0.05,
+  schedule_gamma: 0.7,
+}
+loader: {
+  batch_size: 2,
+  num_workers: 0,
+}
+train_cfg: {
+  init_loss_norm: 100,
+  clip_grad_l2norm: 1.0,
+  cls_prior_prob: 0.01,
+  center_sample: radius,
+  center_sample_radius: 1.5,
+}
+test_cfg: {
+  voting_thresh: 0.7,
+  pre_nms_topk: 2000,
+  max_seg_num: 200,
+  min_score: 0.001,
+  multiclass_nms: True,
+}
+output_folder: ./ckpt/CaptainCook4D/

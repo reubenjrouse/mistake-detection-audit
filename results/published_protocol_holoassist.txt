@@ -1,0 +1,33 @@
+gopro: 113 train recordings (7120 steps), 16 test recordings (905 steps, 67 errors)
+dslr: 113 train recordings (4569 steps), 16 test recordings (595 steps, 62 errors)
+nespresso: 86 train recordings (3308 steps), 11 test recordings (434 steps, 23 errors)
+switch: 111 train recordings (6757 steps), 17 test recordings (970 steps, 34 errors)
+navvis: 16 train recordings (1076 steps), 3 test recordings (181 steps, 5 errors)
+printer_small: 77 train recordings (3177 steps), 11 test recordings (504 steps, 39 errors)
+printer_big: 93 train recordings (1657 steps), 13 test recordings (240 steps, 41 errors)
+atv: 18 train recordings (735 steps), 3 test recordings (121 steps, 9 errors)
+belt: 16 train recordings (262 steps), 1 test recordings (16 steps, 0 errors)
+circuitbreaker: 19 train recordings (417 steps), 3 test recordings (75 steps, 10 errors)
+coffee: 36 train recordings (1439 steps), 5 test recordings (199 steps, 11 errors)
+computer: 62 train recordings (2232 steps), 9 test recordings (371 steps, 19 errors)
+knarrevik_assemble: 91 train recordings (11492 steps), 12 test recordings (1469 steps, 58 errors)
+knarrevik_disassemble: 97 train recordings (9325 steps), 14 test recordings (1356 steps, 49 errors)
+gladom_disassemble: 106 train recordings (3113 steps), 15 test recordings (477 steps, 26 errors)
+marius_assemble: 84 train recordings (4794 steps), 12 test recordings (656 steps, 58 errors)
+marius_disassemble: 101 train recordings (3840 steps), 15 test recordings (659 steps, 36 errors)
+rashult_disassemble: 72 train recordings (8712 steps), 9 test recordings (1063 steps, 38 errors)
+gladom_assemble: 95 train recordings (3694 steps), 14 test recordings (576 steps, 59 errors)
+rashult_assemble: 59 train recordings (9340 steps), 8 test recordings (1500 steps, 135 errors)
+
+holoassist, boundary jitter 0.0 s, averaged over 20 task(s)
+published  AUC: EgoPED 50.6, AMNAR 56.5   EDA: 49.0 / 69.9  (average of noun and verb)
+blind score    micro AUC macro AUC    EDA  std frame AUC  std step AUC
+duration            74.7      76.0   63.6           75.3          59.6
+position            67.3      75.9   63.5           65.8          52.5
+transition          69.4      73.4   57.8           70.6          60.4
+rec_length          65.1      72.0   65.4           64.1          50.5
+rec_duration        69.0      74.3   65.9           67.9          54.4
+sum                 75.5      78.6   61.7           75.9          63.9
+constant            65.5      73.7   64.3           63.7          50.0
+flag nothing        52.5      64.2   95.7           50.0          50.0
+sum / 2             76.8      81.1   62.1           75.9          63.9

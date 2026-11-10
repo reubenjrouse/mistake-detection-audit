@@ -1,0 +1,21 @@
+coffee: 30 train recordings (530 steps), 38 test recordings (683 steps, 72 errors)
+pinwheels: 39 train recordings (505 steps), 45 test recordings (506 steps, 163 errors)
+oatmeal: 42 train recordings (628 steps), 35 test recordings (499 steps, 84 errors)
+quesadilla: 45 train recordings (360 steps), 35 test recordings (261 steps, 89 errors)
+tea: 45 train recordings (431 steps), 35 test recordings (338 steps, 96 errors)
+
+egoper, boundary jitter 0.0 s, averaged over 5 task(s)
+published  AUC: EgoPED 54.9, AMNAR 68.5   EDA: 43.0 / 64.4  (average over the 5 tasks)
+blind score    micro AUC macro AUC    EDA  std frame AUC  std step AUC
+duration            73.5      74.4   73.4           74.6          58.6
+position            56.1      58.1   68.2           59.7          48.2
+transition          70.4      72.9   72.8           73.8          61.9
+rec_length          55.4      57.2   66.9           66.0          51.3
+rec_duration        63.0      65.1   68.8           65.0          52.1
+sum                 56.9      57.4   66.4           72.2          60.5
+constant            63.7      67.4   72.8           63.7          50.0
+flag nothing        50.0      54.8   86.9           50.0          50.0
+sum / 2             63.4      64.3   67.0           72.2          60.5
+amnar               74.7      76.0   77.9           75.1          64.9
+
+wrote C:/Users/Reuben/data/egoper/egoper_retrained_table/_blind/_methods.npz: 2287 test steps, methods ['amnar']

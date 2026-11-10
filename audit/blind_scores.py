@@ -11,7 +11,7 @@ of the training recordings, like the one-class methods. AUROC / AP per error gro
 A last line fits a logistic regression on the five scores with error labels (person split train -> val),
 to show how much signal the annotations alone carry.
 
-Usage: python shortcuts.py C:/Users/Reuben/data/cc4d/steps_dinov2_s_w2.npz [--protocol normal_vs_error]
+Usage: python audit/blind_scores.py C:/Users/Reuben/data/cc4d/steps_dinov2_s_w2.npz [--protocol normal_vs_error] [--scores_out blind.npz]
 """
 import argparse
 

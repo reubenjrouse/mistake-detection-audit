@@ -1,0 +1,292 @@
+diff --git a/libs/datasets/captaincook4d.py b/libs/datasets/captaincook4d.py
+index 4919228..6ad7aa6 100644
+--- a/libs/datasets/captaincook4d.py
++++ b/libs/datasets/captaincook4d.py
+@@ -28,7 +28,7 @@ class CaptainCook4DDataset(Dataset):
+         features_subdir = 'I3D',
+         **kwargs
+     ):
+-        root_dir = '/home/weijin/source/MistakeDetection/FAFP/CaptainCook4D'
++        root_dir = 'D:/data/amnar_cc4d'
+         self.feat_root_dir = os.path.join(root_dir, 'feats', features_subdir)
+         self.split = split
+         self.is_training = is_training
+diff --git a/libs/datasets/datasets.py b/libs/datasets/datasets.py
+index 6948ef8..e3bc401 100644
+--- a/libs/datasets/datasets.py
++++ b/libs/datasets/datasets.py
+@@ -37,6 +37,6 @@ def make_data_loader(dataset, is_training, generator, batch_size, num_workers, d
+         shuffle=is_training,
+         drop_last=drop_last,
+         generator=generator,
+-        persistent_workers=True
++        persistent_workers=num_workers > 0
+     )
+     return loader
+\ No newline at end of file
+diff --git a/libs/datasets/egoper.py b/libs/datasets/egoper.py
+index a9a6535..1d840fa 100644
+--- a/libs/datasets/egoper.py
++++ b/libs/datasets/egoper.py
+@@ -31,7 +31,7 @@ class EgoPERdataset(Dataset):
+         features_subdir = 'features_10fps_new',
+         **kwargs
+     ):
+-        root_dir = '/home/weijin/source/MistakeDetection/EgoPER_official/EgoPER'
++        root_dir = 'D:/data/amnar_egoper'
+         self.split = split
+         self.is_training = is_training
+         self.default_fps = default_fps
+diff --git a/libs/modeling/blocks.py b/libs/modeling/blocks.py
+index ee2ae26..27a49ae 100644
+--- a/libs/modeling/blocks.py
++++ b/libs/modeling/blocks.py
+@@ -1142,6 +1142,25 @@ class CausalLocalMultiHeadCrossConvAttention(nn.Module):
+         k_unfolded = k.unfold(-1, self.win_len + 1, 1)
+         v_unfolded = v.unfold(-1, self.win_len + 1, 1)
+ 
++        if not self.training and T_q_new > 2048:
++            # Same computation in chunks of time steps (each step only uses its own window), so long
++            # test videos fit in GPU memory.
++            rt_mask, mask_unfolded = None, None
++            if mask is not None:
++                mask = mask[:, :, ::self.n_kv_stride]
++                rt_mask = mask.clone()
++                mask_unfolded = F.pad(mask, (self.win_len, 0), value=0).unfold(-1, self.win_len + 1, 1).unsqueeze(1)
++            chunks = []
++            for s in range(0, T_q_new, 1024):
++                e = min(s + 1024, T_q_new)
++                scores = torch.einsum('bhdt,bhdtl->bhdtl', q[..., s:e], k_unfolded[..., s:e, :]) / self.scale
++                if mask_unfolded is not None:
++                    scores = scores.masked_fill(mask_unfolded[..., s:e, :] == 0, -1e9)
++                chunks.append(torch.einsum('bhdtl,bhdtl->bhdt', F.softmax(scores, dim=-1), v_unfolded[..., s:e, :]))
++            attn_output = torch.cat(chunks, -1).contiguous().view(B, self.embed_dim, -1)
++            out = self.proj_drop(self.fc_out(attn_output.transpose(1, 2)).transpose(1, 2))
++            return out, rt_mask
++
+         # 计算注意力得分
+         attn_scores = torch.einsum('bhdt,bhdtl->bhdtl', q, k_unfolded) / self.scale
+ 
+diff --git a/libs/modeling/meta_archs.py b/libs/modeling/meta_archs.py
+index e69063b..3aad5a6 100644
+--- a/libs/modeling/meta_archs.py
++++ b/libs/modeling/meta_archs.py
+@@ -30,6 +30,18 @@ from .rebuild_models import (
+ from .utils import ActionClusters, LinearTransformModel, calculate_distance, transform_frame_feat_to_action_feat, most_common_element, calculate_intersection_ratio, filter_segments_and_labels
+ 
+ 
++
++_CC4D_TASK_GRAPH = None
++
++
++def _cc4d_task_graph():
++    """Load the CaptainCook4D task graph once (opening it per segment leaks file handles on Windows)."""
++    global _CC4D_TASK_GRAPH
++    if _CC4D_TASK_GRAPH is None:
++        with open('D:/data/amnar_cc4d/CC4D_process/task_graph.json', 'r') as f:
++            _CC4D_TASK_GRAPH = json.load(f)
++    return _CC4D_TASK_GRAPH
++
+ class PtTransformerClsHead(nn.Module):
+     """
+     1D Conv heads for classification
+@@ -1608,7 +1620,7 @@ class PtTransformer_CSPL_GCN(nn.Module):
+         if self.rebuild_model_cfg['dataset_name'] == 'HoloAssist':
+             graphs = json.load(open('libs/datasets/holoassist_dag_buffer/task_graphs.json', 'r'))
+         elif self.rebuild_model_cfg['dataset_name'] == 'CaptainCook4D':
+-            graphs = json.load(open('/home/weijin/source/MistakeDetection/FAFP/CaptainCook4D/CC4D_process/task_graph.json', 'r'))
++            graphs = _cc4d_task_graph()
+         elif self.rebuild_model_cfg['dataset_name'] == 'EgoPER':
+             if self.rebuild_model_cfg['use_trainset_graph']:
+                 graphs = json.load(open('libs/datasets/egoper_dag_buffer/task_graphs.json', 'r'))
+@@ -1775,7 +1787,7 @@ class PtTransformer_CSPL_GCN(nn.Module):
+             holoassist_trainset_graphs = json.load(open('libs/datasets/holoassist_dag_buffer/task_graphs.json', 'r'))
+             graphs = holoassist_trainset_graphs
+         elif self.rebuild_model_cfg['dataset_name'] == 'CaptainCook4D':
+-            cc4d_trainset_graphs = json.load(open('/home/weijin/source/MistakeDetection/FAFP/CaptainCook4D/CC4D_process/task_graph.json', 'r'))
++            cc4d_trainset_graphs = _cc4d_task_graph()
+             graphs = cc4d_trainset_graphs
+         elif self.rebuild_model_cfg['dataset_name'] == 'EgoPER':
+             if self.rebuild_model_cfg['use_trainset_graph']:
+@@ -1907,7 +1919,7 @@ class PtTransformer_CSPL_GCN(nn.Module):
+                 pred_action_cluster_centers = []
+                 for action_id in pred:
+                     if action_id_to_str is not None:
+-                        error_desc = action_id_to_str[int(action_id)]
++                        error_desc = action_id_to_str[int(action_id)] if action_id_to_str is not None else None
+                     else:
+                         error_desc = None
+                     if error_descriptions_to_feat is not None:
+@@ -1948,7 +1960,7 @@ class PtTransformer_CSPL_GCN(nn.Module):
+                 for action_id in gt_pred:
+                     action_id = int(action_id)
+                     action_id = 0 if action_id == -1 else action_id
+-                    error_desc = action_id_to_str[action_id]
++                    error_desc = action_id_to_str[action_id] if action_id_to_str is not None else None
+                     if error_descriptions_to_feat is not None:
+                         error_desc_feat = error_descriptions_to_feat[error_desc]
+                         gt_error_desc_feats.append(error_desc_feat)
+@@ -1969,7 +1981,7 @@ class PtTransformer_CSPL_GCN(nn.Module):
+                 pred_error_desc_feats = []
+                 pred_action_cluster_centers = []
+                 for action_id in pred:
+-                    error_desc = action_id_to_str[int(action_id)]
++                    error_desc = action_id_to_str[int(action_id)] if action_id_to_str is not None else None
+                     if error_descriptions_to_feat is not None:
+                         error_desc_feat = error_descriptions_to_feat[error_desc]
+                         pred_error_desc_feats.append(error_desc_feat)
+@@ -2010,7 +2022,7 @@ class PtTransformer_CSPL_GCN(nn.Module):
+                 pred_action_cluster_centers = []
+                 for action_id in pred:
+                     if action_id_to_str is not None:
+-                        error_desc = action_id_to_str[int(action_id)]
++                        error_desc = action_id_to_str[int(action_id)] if action_id_to_str is not None else None
+                     else:
+                         error_desc = None
+                     if error_descriptions_to_feat is not None:
+@@ -2208,7 +2220,7 @@ class PtTransformer_CSPL_GCN(nn.Module):
+                     for actions, segment in zip(potential_actions_seq, segments_used_in_potential_actions):
+                         for temporal_idx in range(segment[0], segment[1] + 1):
+                             for insert_sample_idx, action in enumerate(actions):
+-                                error_desc = action_id_to_str[int(action)]
++                                error_desc = action_id_to_str[int(action)] if action_id_to_str is not None else None
+                                 if error_descriptions_to_feat is not None:
+                                     error_desc_feat = error_descriptions_to_feat[error_desc]
+                                     pred_error_desc_feats_list[insert_sample_idx].append(error_desc_feat)
+@@ -2225,7 +2237,7 @@ class PtTransformer_CSPL_GCN(nn.Module):
+                         segment = segments_used_in_potential_actions[action_idx]
+                         added_segments.append(segment)
+                         for insert_sample_idx, action in enumerate(actions):
+-                            error_desc = action_id_to_str[int(action)]
++                            error_desc = action_id_to_str[int(action)] if action_id_to_str is not None else None
+                             error_desc_feat = error_descriptions_to_feat[error_desc] if error_descriptions_to_feat is not None else None
+                             for frame_idx in range(segment[0], segment[1] + 1):
+                                 if error_desc_feat is not None:
+diff --git a/libs/utils/nms.py b/libs/utils/nms.py
+index 017a1be..d779a35 100644
+--- a/libs/utils/nms.py
++++ b/libs/utils/nms.py
+@@ -2,7 +2,10 @@
+ # https://github.com/open-mmlab/mmcv/blob/master/mmcv/ops/nms.py
+ import torch
+ 
+-import nms_1d_cpu
++try:
++    import nms_1d_cpu
++except ImportError:  # no compiled extension (e.g. Windows): use the Python versions below
++    nms_1d_cpu = None
+ 
+ 
+ def nms_1d(segs, scores, iou_threshold):
+@@ -89,10 +92,13 @@ class NMSop(torch.autograd.Function):
+                 valid_mask, as_tuple=False).squeeze(dim=1)
+ 
+         # nms op; return inds that is sorted by descending order
+-        inds = nms_1d_cpu.nms(
+-            segs.contiguous().cpu(),
+-            scores.contiguous().cpu(),
+-            iou_threshold=float(iou_threshold))
++        if nms_1d_cpu is not None:
++            inds = nms_1d_cpu.nms(
++                segs.contiguous().cpu(),
++                scores.contiguous().cpu(),
++                iou_threshold=float(iou_threshold))
++        else:
++            inds = nms_1d(segs.cpu(), scores.cpu(), float(iou_threshold))
+         # cap by max number
+         if max_num > 0:
+             inds = inds[:min(max_num, len(inds))]
+@@ -112,14 +118,18 @@ class SoftNMSop(torch.autograd.Function):
+         # pre allocate memory for sorted results
+         dets = segs.new_empty((segs.size(0), 3), device='cpu')
+         # softnms op, return dets that stores the sorted segs / scores
+-        inds = nms_1d_cpu.softnms(
+-            segs.cpu(),
+-            scores.cpu(),
+-            dets.cpu(),
+-            iou_threshold=float(iou_threshold),
+-            sigma=float(sigma),
+-            min_score=float(min_score),
+-            method=int(method))
++        if nms_1d_cpu is not None:
++            inds = nms_1d_cpu.softnms(
++                segs.cpu(),
++                scores.cpu(),
++                dets.cpu(),
++                iou_threshold=float(iou_threshold),
++                sigma=float(sigma),
++                min_score=float(min_score),
++                method=int(method))
++        else:
++            inds = softnms_1d(segs.cpu(), scores.cpu(), dets, float(iou_threshold), float(sigma),
++                              float(min_score), int(method))
+         
+         # inds = softnms_1d(
+         #     segs,
+diff --git a/metric_vis_multiprocess.py b/metric_vis_multiprocess.py
+index aabbcea..d4514f0 100644
+--- a/metric_vis_multiprocess.py
++++ b/metric_vis_multiprocess.py
+@@ -167,10 +167,10 @@ class ActionSegmentationErrorDetectionEvaluator:
+         self.online_test = args.online_test
+         # self.step_annotations = {}
+         task = args.task
+-        EgoPER_root_dir = './EgoPER'
++        EgoPER_root_dir = 'D:/data/amnar_egoper'
+         HoloAssist_root_dir = './HoloAssist'
+-        CaptainCook4D_root_dir = './CaptainCook4D'
+-        CaptainCook4D_feat_dir = 'feats/I3D'
++        CaptainCook4D_root_dir = 'D:/data/amnar_cc4d'
++        CaptainCook4D_feat_dir = 'feats/dinov2_s'
+         
+         if args.dataset == 'EgoPER':
+             with open(os.path.join(EgoPER_root_dir, args.task, 'test.txt'), 'r') as fp:
+@@ -703,7 +703,7 @@ if __name__ == '__main__':
+     
+     args = parser.parse_args()
+ 
+-    mp.set_start_method('forkserver')  # or 'forkserver'
++    mp.set_start_method('spawn')  # or 'forkserver'
+ 
+     ckpt_subfolder = os.path.join('ckpt', args.dataset, args.dirname)
+     if not os.path.exists(ckpt_subfolder):
+diff --git a/test.py b/test.py
+index 50fe3f7..7e93c5c 100644
+--- a/test.py
++++ b/test.py
+@@ -106,7 +106,7 @@ def main(args):
+     # load ckpt, reset epoch / best rmse
+     checkpoint = torch.load(
+         ckpt_file,
+-        map_location = lambda storage, loc: storage.cuda(cfg['devices'][0])
++        map_location=cfg['devices'][0], weights_only=False
+     )
+     # load ema model instead
+     logging.info("Loading from EMA model ...")
+diff --git a/test_ed.py b/test_ed.py
+index b07dcfd..f3ce85f 100644
+--- a/test_ed.py
++++ b/test_ed.py
+@@ -163,7 +163,7 @@ def main(args):
+     # load ckpt, reset epoch / best rmse
+     checkpoint = torch.load(
+         ckpt_file,
+-        map_location = lambda storage, loc: storage.cuda(cfg['devices'][0])
++        map_location=cfg['devices'][0], weights_only=False
+     )
+     # load ema model instead
+     logging.info("Loading from EMA model ...")
+diff --git a/train.py b/train.py
+index b80c479..85240b4 100644
+--- a/train.py
++++ b/train.py
+@@ -132,8 +132,7 @@ def main(args):
+         if os.path.isfile(args.resume):
+             # load ckpt, reset epoch / best rmse
+             checkpoint = torch.load(args.resume,
+-                map_location = lambda storage, loc: storage.cuda(
+-                    cfg['devices'][0]))
++                map_location=cfg['devices'][0], weights_only=False)
+             model.load_state_dict(checkpoint['state_dict'], strict=False)
+             model_ema.module.load_state_dict(checkpoint['state_dict_ema'], strict=False)
+ 

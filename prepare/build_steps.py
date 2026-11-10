@@ -2,7 +2,7 @@
 
 Every method reads this one file, so all methods see exactly the same data.
 
-Usage: python build_steps.py C:/Users/Reuben/data/cc4d [--backbone dinov2_s] [--window 2]
+Usage: python prepare/build_steps.py C:/Users/Reuben/data/cc4d [--backbone dinov2_s] [--window 2]
 Writes <data_root>/steps_<backbone>_w<window>.npz
 """
 import argparse

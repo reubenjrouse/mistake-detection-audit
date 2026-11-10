@@ -1,0 +1,16 @@
+AMNAR (our retrained copies), paper-style metrics from AMNAR's metric_vis_multiprocess.py
+(omnivore_e60 = Omnivore seed 0; s1, s2 = seeds 1, 2)
+
+CaptainCook4D (paper: EDA 72.3, AUC 60.2)
+|cc4d_rebuild_dinov2_e60|EDA: 53.5|Micro AUC: 52.6|Macro AUC: 55.2|
+|cc4d_rebuild_omnivore_e60|EDA: 51.1|Micro AUC: 51.0|Macro AUC: 52.5|
+|cc4d_rebuild_omnivore_s1_e60|EDA: 46.1|Micro AUC: 47.8|Macro AUC: 49.1|
+|cc4d_rebuild_omnivore_s2_e60|EDA: 44.6|Micro AUC: 47.1|Macro AUC: 46.8|
+|cc4d_rebuild_slowfast_e60|EDA: 53.8|Micro AUC: 51.8|Macro AUC: 53.0|
+
+EgoPER (paper, average over tasks: EDA 64.4, AUC 68.5)
+|ours_coffee_rebuild_e60|EDA: 79.9|Micro AUC: 58.3|Macro AUC: 63.0|
+|ours_oatmeal_rebuild_e60|EDA: 70.1|Micro AUC: 70.2|Macro AUC: 72.0|
+|ours_pinwheels_rebuild_e60|EDA: 64.0|Micro AUC: 63.6|Macro AUC: 62.7|
+|ours_quesadilla_rebuild_e60|EDA: 67.9|Micro AUC: 64.1|Macro AUC: 67.2|
+|ours_tea_rebuild_e60|EDA: 69.9|Micro AUC: 65.4|Macro AUC: 66.6|
